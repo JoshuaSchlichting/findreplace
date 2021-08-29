@@ -12,17 +12,20 @@ import (
 var testFiles []string
 
 const findPhrase = "replacethis"
-
 const replaceWith = "success"
+
+func handleFileError(filename string, err error) {
+	if err != nil {
+		errMsg := fmt.Sprintf("An error occurred while reading %s\n%s", filename, err)
+		fmt.Println(errMsg)
+	}
+}
 
 func TestFindReplaceASingleFile(t *testing.T) {
 	testFilename := generateTestFile(string(findPhrase))
 	findAndReplace(testFilename, findPhrase, replaceWith)
 	fileText, err := ioutil.ReadFile(testFilename)
-	if err != nil {
-		fmt.Printf("An error occurred while reading %s\n%s", testFilename, err)
-	}
-
+	handleFileError(testFilename, err)
 	if strings.Contains(string(fileText), string(findPhrase)) {
 		t.Errorf("The find phrase '%s' was not replaced in the test file '%s'", findPhrase, testFilename)
 	}
@@ -31,13 +34,17 @@ func TestFindReplaceASingleFile(t *testing.T) {
 func TestFindReplaceDirectory(t *testing.T) {
 	loopCount := 5
 	for loopCount > 0 {
-		append(testFiles, generateTestFile(findPhrase))
+		testFiles = append(testFiles, generateTestFile(findPhrase))
 		loopCount--
 	}
 	for _, filename := range testFiles {
 		findAndReplace(filename, findPhrase, replaceWith)
+		fileText, err := ioutil.ReadFile(filename)
+		handleFileError(filename, err)
+		if strings.Contains(string(fileText), string(findPhrase)) {
+			t.Errorf("The find phrase '%s' was not replaced in the test file '%s'", findPhrase, filename)
+		}
 	}
-
 }
 
 func generateTestFile(seedString string) string {

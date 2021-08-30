@@ -18,11 +18,8 @@ func main() {
 func findAndReplace(pathToSearch, findPhrase, replacePhrase string) {
 	switch mode := util.GetFileStatMode(pathToSearch); {
 	case mode.IsDir():
-		// do directory stuff
-		fmt.Println("directory")
 		util.ReplacePhrasesInDirectory(pathToSearch, findPhrase, replacePhrase)
 	case mode.IsRegular():
-		fmt.Println("file")
 		util.FindAndReplace(pathToSearch, findPhrase, replacePhrase)
 	}
 

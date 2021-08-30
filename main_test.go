@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -11,8 +12,35 @@ import (
 
 var testFiles []string
 
-const findPhrase = "replacethis"
-const replaceWith = "success"
+const (
+	findPhrase  = "replacethis"
+	replaceWith = "success"
+	testDataDir = "/tmp/testdata/"
+)
+
+// TestMain is a low-level primitive and should not be necessary for casual testing needs,
+// where ordinary test functions suffice.
+// https://pkg.go.dev/testing#hdr-Main
+func TestMain(m *testing.M) {
+	// call flag.Parse() here if TestMain uses flags
+	setup()
+	code := m.Run()
+	tearDown()
+
+	os.Exit(code)
+}
+
+func setup() {
+	if _, err := os.Stat(testDataDir); os.IsNotExist(err) {
+		err := os.Mkdir(testDataDir, 0777)
+		fmt.Println(fmt.Sprintf("An error occurred while attempting to create the test data directory: '%s'"+
+			testDataDir, err))
+	}
+}
+
+func tearDown() {
+	os.Remove(testDataDir)
+}
 
 func handleFileError(filename string, err error) {
 	if err != nil {
@@ -22,7 +50,7 @@ func handleFileError(filename string, err error) {
 }
 
 func TestFindReplaceASingleFile(t *testing.T) {
-	testFilename := generateTestFile(string(findPhrase))
+	testFilename := generateTestFile(t, string(findPhrase))
 	findAndReplace(testFilename, findPhrase, replaceWith)
 	fileText, err := ioutil.ReadFile(testFilename)
 	handleFileError(testFilename, err)
@@ -32,13 +60,14 @@ func TestFindReplaceASingleFile(t *testing.T) {
 }
 
 func TestFindReplaceDirectory(t *testing.T) {
-	loopCount := 5
+	loopCount := 2
 	for loopCount > 0 {
-		testFiles = append(testFiles, generateTestFile(findPhrase))
+		testFiles = append(testFiles, generateTestFile(t, findPhrase))
 		loopCount--
 	}
+
+	findAndReplace(testDataDir, findPhrase, replaceWith)
 	for _, filename := range testFiles {
-		findAndReplace(filename, findPhrase, replaceWith)
 		fileText, err := ioutil.ReadFile(filename)
 		handleFileError(filename, err)
 		if strings.Contains(string(fileText), string(findPhrase)) {
@@ -47,12 +76,18 @@ func TestFindReplaceDirectory(t *testing.T) {
 	}
 }
 
-func generateTestFile(seedString string) string {
+func generateTestFile(t *testing.T, seedString string) string {
+
 	fmt.Println("Generating test file...")
-	testFilename := "/tmp/unittest_data_" + strconv.Itoa(rand.Int())
+	testFilename := testDataDir + "unittest_data_" + strconv.Itoa(rand.Int())
 	err := ioutil.WriteFile(testFilename, []byte(seedString), 0644)
 	if err != nil {
 		fmt.Println(err)
 	}
+
+	t.Cleanup(func() {
+		os.Remove(testFilename)
+	})
+
 	return testFilename
 }

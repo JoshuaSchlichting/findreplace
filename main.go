@@ -3,7 +3,6 @@ package main
 import (
 	"findreplace/internal/util"
 	"flag"
-	"fmt"
 )
 
 func main() {
